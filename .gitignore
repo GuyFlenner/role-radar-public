@@ -1,0 +1,64 @@
+# ── Personal job-search data — NEVER in this repo ────────────────────────────
+# This platform is shared by more than one person. Each user's CV, pipeline, salary bands,
+# rejections and interview debriefs live in $PROFILE_DIR, OUTSIDE this repo. A shared private
+# repo is not isolation: committing any of this makes it permanently visible to everyone else
+# with access. `test_profile.py::test_no_profile_dir_content_is_tracked_by_git` enforces it.
+profile.json
+profiles/*.json
+!profiles/_template.json
+!profiles/_fixtures/*.json
+# The CI fixture profile. `profile.json` above has no leading slash, so it matches at ANY
+# depth and silently swallowed this file: CI then found the fixture's notes but no profile,
+# the RAG gate reported SKIPPED, and the step passed having asserted nothing — the exact
+# defect that step exists to prevent. Contains no personal data; see the file's _comment.
+# `test_rag_cli.py::test_ci_fixture_profile_is_tracked_by_git` enforces that it stays tracked.
+!profiles/_fixtures/rag_demo/profile.json
+# `positions/*`, NOT `positions/` — git cannot re-include anything inside an EXCLUDED
+# DIRECTORY, so the `!` lines below are dead if the directory itself is excluded. That is
+# why the layout template silently failed to ship on the first attempt.
+positions/*
+# The layout template MUST ship, or a new user clones a platform whose per-position
+# structure is undocumented. It contains no personal data.
+!positions/_template/
+job-tracking/
+cv.md
+cv_*.md
+cv*.pdf
+CV_*.pdf
+CV_*.md
+_drafts/
+**/_drafts/
+
+# ── Secrets and private config ───────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+ats_targets.json
+.claude/settings.local.json
+.mcp.json
+
+# ── Generated artifacts ──────────────────────────────────────────────────────
+*.last_seen.json
+.last_*
+/job-tracking/PIPELINE_BOARD.md
+tracked_status.md
+*_shortlist*.json
+*_shortlist*.md
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+
+# ── Editors / OS ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

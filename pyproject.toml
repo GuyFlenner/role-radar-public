@@ -1,0 +1,67 @@
+[project]
+name = "role-radar"
+version = "0.1.0"
+description = "Automated job search pipeline — native Claude skills + src/jobcore deterministic core"
+requires-python = ">=3.13"
+dependencies = [
+    # Native-skills pipeline: the deterministic core (src/jobcore) needs only
+    # stdlib + these. LangGraph/LangChain removed with the retired src/agents engine.
+    "pypdf>=3.0.0",
+    "python-dotenv>=1.0.0",
+    "markdown>=3.7",
+    "xhtml2pdf>=0.2.17",
+    "python-docx>=1.2.0",
+]
+
+[project.optional-dependencies]
+pdf = ["weasyprint>=62.0"]
+# RAG lane (src/jobcore/rag). Deliberately EXTRAS, not core dependencies: the core
+# stays near-stdlib and the RAG logic is testable without either of these via the
+# InMemoryBackend / injectable-scorer seams.
+#
+# Split into two on purpose. `rerank` pulls sentence-transformers, which pulls
+# torch — a multi-GB tree. CI only needs `rag` to run the eval gate
+# (`uv sync --extra rag`), because that gate MUST NOT skip silently there:
+# `evalset.run_gate()` raises RagExtraMissing when CI is set and the extra is
+# absent. Keeping torch out of that install keeps CI fast; the reranker's ordering
+# logic is tested against an injectable fake scorer, so it needs no model either.
+rag = ["chromadb>=0.5"]
+rerank = ["sentence-transformers>=3"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.5",
+    "pre-commit>=4",
+    "mypy>=2.3.0",
+    "types-markdown>=3.10.2.20260712",
+    "types-pyyaml>=6.0.12.20260906",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["src/jobcore/tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+# Lint/format only the project source. Personal, PII-bearing dirs (tailored CVs,
+# per-position work, archived one-off scripts) are intentionally out of scope so
+# `ruff check .` / `ruff format .` never touch or gate on candidate data.
+extend-exclude = ["job-tracking", "positions", "_archive"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = ["E501"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[[tool.mypy.overrides]]
+# xhtml2pdf ships no type stubs or py.typed marker
+module = ["xhtml2pdf", "xhtml2pdf.*"]
+ignore_missing_imports = true

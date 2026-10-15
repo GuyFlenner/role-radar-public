@@ -1,0 +1,16 @@
+{
+  "_comment": "Copy this file to ats_targets.json and fill in real boards. Greenhouse token = the slug in boards.greenhouse.io/<token>. Comeet uid+token come from a company's Comeet-hosted careers page URL (careers-api/2.0/company/<uid>/positions?token=<token>). Find a company's board token once by opening its /careers page and reading the embedded feed URL.",
+  "targets": [
+    {
+      "company": "ExampleGreenhouseCo",
+      "ats": "greenhouse",
+      "token": "REPLACE_WITH_BOARD_TOKEN"
+    },
+    {
+      "company": "ExampleComeetCo",
+      "ats": "comeet",
+      "uid": "REPLACE_WITH_COMPANY_UID",
+      "token": "REPLACE_WITH_PUBLIC_TOKEN"
+    }
+  ]
+}

@@ -1,0 +1,142 @@
+{
+  "_comment": [
+    "SYNTHETIC test fixture — invented person, invented employers.",
+    "Deliberately the OPPOSITE of backend_lead_tlv.json on every axis that used to be hardcoded:",
+    "an individual contributor (not a lead), in Europe (not Israel), on a frontend stack, paid",
+    "annually in EUR, with 'preferred' geo rather than a hard commute band.",
+    "Under the old constants this person scored 1 on everything and was dropped before scoring."
+  ],
+  "schema_version": "1.0",
+  "identity": {
+    "name": "Test Frontend IC",
+    "cv_path": "cv.md",
+    "email": ""
+  },
+  "locale": {
+    "timezone": "Europe/Berlin",
+    "currency": "EUR",
+    "languages": [
+      "en",
+      "de"
+    ]
+  },
+  "geo": {
+    "mode": "preferred",
+    "preferred_locations": [
+      "berlin",
+      "potsdam",
+      "hamburg",
+      "remote"
+    ],
+    "commute_extra": {}
+  },
+  "roles": {
+    "target_titles": [
+      "frontend engineer",
+      "senior frontend engineer",
+      "frontend developer",
+      "ui engineer",
+      "web engineer",
+      "fullstack engineer"
+    ],
+    "exclude_titles": [
+      "qa",
+      "product manager",
+      "sales engineer",
+      "recruiter",
+      "designer"
+    ],
+    "in_band_titles": [
+      "senior",
+      "staff"
+    ],
+    "above_band_titles": [
+      "director",
+      "vp",
+      "vice president",
+      "head of",
+      "chief"
+    ],
+    "require_leadership": false,
+    "domain_exclusions": [
+      "embedded",
+      "firmware",
+      "rtos"
+    ],
+    "domain_exclusion_overrides": []
+  },
+  "skills": {
+    "keywords": [
+      "react",
+      "typescript",
+      "javascript",
+      "css",
+      "html",
+      "accessibility",
+      "wcag",
+      "testing",
+      "playwright",
+      "vite",
+      "webpack",
+      "graphql",
+      "next.js",
+      "design system"
+    ],
+    "boost_keywords": [
+      "react",
+      "typescript",
+      "accessibility"
+    ]
+  },
+  "facts": {
+    "known_languages": [
+      "typescript",
+      "javascript",
+      "python"
+    ],
+    "knockout_languages": [
+      "go",
+      "rust",
+      "java"
+    ],
+    "employers": [
+      {
+        "name": "ExampleShop",
+        "markers": [
+          "design system",
+          "storybook"
+        ]
+      }
+    ],
+    "never_claim": [
+      "kubernetes",
+      "kafka",
+      "terraform"
+    ],
+    "rank_or_credential": null
+  },
+  "salary": {
+    "currency": "EUR",
+    "open": 95000,
+    "target": 88000,
+    "floor": 80000,
+    "period": "year",
+    "sources": [
+      "levels.fyi",
+      "glassdoor.de"
+    ]
+  },
+  "rag": {
+    "corpus_globs": [],
+    "goldens": []
+  },
+  "csv": {
+    "pattern": "*.csv",
+    "sender_filter": ""
+  },
+  "research": {
+    "depth": "quick",
+    "deep_companies": [],
+    "quick_companies": []
+  }
+}

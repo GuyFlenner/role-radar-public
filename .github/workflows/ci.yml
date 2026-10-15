@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      # xhtml2pdf → svglib → rlpycairo → pycairo, which has no Linux wheels and
+      # builds from source against the system cairo headers. Without these the
+      # `uv sync` below fails on the runner with: Dependency "cairo" not found.
+      - name: Install system libs (cairo, for pycairo build)
+        run: sudo apt-get update && sudo apt-get install -y libcairo2-dev pkg-config
+
+      - name: Sync dependencies
+        run: uv sync --group dev --extra rag
+
+      - name: Lint (ruff)
+        # Repo-wide, matching the format check below — a narrower scope let an
+        # unformatted scripts/ file pass lint but fail the repo-wide format check.
+        run: uv run ruff check .
+
+      - name: Format (ruff format --check)
+        run: uv run ruff format --check .
+
+      - name: Types (mypy)
+        # Blocking as of 2026-08-02: the 11 standing errors are fixed, two of them real bugs.
+        run: uv run mypy src/jobcore
+
+      - name: Tests (pytest)
+        run: uv run python -m pytest -q
+
+      - name: Publish check (no personal data tracked)
+        run: uv run python -m src.jobcore.publish_check
+
+      - name: Diagram UX lint (.drawio)
+        run: uv run python -m src.jobcore.diagram_gate
+
+      - name: Skill lint
+        run: uv run python -m src.jobcore.skill_lint
+
+      # verify_all.sh and .pre-commit-config.yaml both run this. It was missing here,
+      # so the one gate that checks retrieval quality was enforced by nothing.
+      # Run against the checked-in fixture corpus, not the runner's (absent) profile — with no
+      # profile the gate correctly reports SKIPPED/0, which would make this step a no-op that
+      # still reads as a passing gate. The fixture gives it three real goldens to score.
+      - name: RAG goldens
+        env:
+          PROFILE_DIR: profiles/_fixtures/rag_demo
+        run: uv run python -m src.jobcore.rag --root profiles/_fixtures/rag_demo eval
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Runs the gitleaks BINARY over the full history, not gitleaks-action.
+      #
+      # The action computes a diff range and on a push does `git log <first>^..<head>`. This
+      # repo's history begins with a root commit and then merges GitHub's unrelated
+      # auto-init commit, so `<root>^` does not resolve:
+      #
+      #   fatal: ambiguous argument '0adf507^..37951a8': unknown revision
+      #   ERR failed to scan Git repository
+      #   WRN scanned ~0 bytes (0)  |  WRN no leaks found in partial scan
+      #
+      # It then exited 1. Note what that means: the secret scan reported "no leaks found"
+      # having scanned ZERO BYTES, and failed for an unrelated reason. Either outcome is
+      # wrong — a red gate nobody trusts, wrapped around a scan that never ran.
+      #
+      # `gitleaks detect` over the whole repo has no range to get wrong.
+      - name: Install gitleaks
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.28.0/gitleaks_8.28.0_linux_x64.tar.gz             | tar -xz -C /usr/local/bin gitleaks
+          gitleaks version
+
+      - name: Scan full history for secrets
+        run: gitleaks detect --source . --redact --verbose --exit-code 1

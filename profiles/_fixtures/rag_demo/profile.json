@@ -1,0 +1,86 @@
+{
+  "_comment": "SYNTHETIC — CI fixture ONLY. CI fixture ONLY. Gives the RAG goldens gate a real corpus to evaluate so the CI step is a genuine assertion, not a SKIPPED no-op. Not a usable personal profile.",
+  "schema_version": "1.0",
+  "identity": {
+    "name": "CI Fixture",
+    "cv_path": "cv.md"
+  },
+  "locale": {
+    "timezone": "UTC",
+    "currency": "USD",
+    "languages": [
+      "en"
+    ]
+  },
+  "geo": {
+    "mode": "any",
+    "preferred_locations": [],
+    "commute_extra": {}
+  },
+  "roles": {
+    "target_titles": [
+      "engineer"
+    ],
+    "exclude_titles": [],
+    "in_band_titles": [],
+    "above_band_titles": [],
+    "require_leadership": false,
+    "domain_exclusions": [],
+    "domain_exclusion_overrides": []
+  },
+  "skills": {
+    "keywords": [
+      "python",
+      "kafka",
+      "postgres"
+    ],
+    "boost_keywords": [
+      "python"
+    ]
+  },
+  "facts": {},
+  "salary": {},
+  "rag": {
+    "corpus_globs": [
+      "notes/*.md"
+    ],
+    "goldens": [
+      {
+        "id": "postgres",
+        "query": "how do I scale a write-heavy postgres table",
+        "must_retrieve": [
+          "postgres.md"
+        ],
+        "top_source": "postgres.md",
+        "k": 3
+      },
+      {
+        "id": "kafka",
+        "query": "what is consumer lag",
+        "must_retrieve": [
+          "kafka.md"
+        ],
+        "top_source": "kafka.md",
+        "k": 3
+      },
+      {
+        "id": "star",
+        "query": "how should I structure a behavioural answer",
+        "must_retrieve": [
+          "interview.md"
+        ],
+        "top_source": "interview.md",
+        "k": 3
+      }
+    ]
+  },
+  "csv": {
+    "pattern": "*.csv",
+    "sender_filter": ""
+  },
+  "research": {
+    "depth": "quick",
+    "deep_companies": [],
+    "quick_companies": []
+  }
+}

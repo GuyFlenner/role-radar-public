@@ -1,0 +1,78 @@
+# Install once per clone: uv run pre-commit install
+#   (installs BOTH the pre-commit and pre-push hooks — see default_install_hook_types)
+#
+# Two gates, by design:
+#   - pre-commit (fast, per-file, auto-fixing): secrets + ruff lint --fix + ruff format
+#   - pre-push   (full, repo-wide, blocking):   the EXACT ci.yml blocking steps, so a push
+#                                               can never fail CI for lint/format/tests.
+default_install_hook_types: [pre-commit, pre-push]
+
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.3
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.20
+    hooks:
+      # Auto-fixing hooks are commit-only: fix at commit, verify at push.
+      - id: ruff
+        args: [--fix]
+        stages: [pre-commit]
+      # Auto-format on commit so `ruff format --check` (a CI blocking step) can't fail later.
+      - id: ruff-format
+        stages: [pre-commit]
+
+  # Pre-push gate — mirrors .github/workflows/ci.yml's blocking `test` job exactly.
+  # Runs once per push (batches commits), repo-wide, on the real committed state.
+  - repo: local
+    hooks:
+      - id: ci-ruff-check
+        name: "CI mirror: ruff check ."
+        entry: uv run ruff check .
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: ci-ruff-format
+        name: "CI mirror: ruff format --check ."
+        entry: uv run ruff format --check .
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: ci-pytest
+        name: "CI mirror: pytest"
+        entry: uv run python -m pytest -q
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: ci-publish-check
+        name: "CI mirror: publish check"
+        entry: uv run python -m src.jobcore.publish_check
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: ci-drawio
+        name: "CI mirror: drawio diagrams"
+        entry: uv run python -m src.jobcore.diagram_gate
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: ci-skill-lint
+        name: "CI mirror: skill lint"
+        entry: uv run python -m src.jobcore.skill_lint
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: ci-rag-goldens
+        name: "CI mirror: rag goldens"
+        entry: env PROFILE_DIR=profiles/_fixtures/rag_demo uv run python -m src.jobcore.rag --root profiles/_fixtures/rag_demo eval
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: ci-mypy
+        name: "CI mirror: mypy"
+        entry: uv run mypy src/jobcore
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

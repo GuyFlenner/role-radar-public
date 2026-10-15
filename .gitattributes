@@ -1,0 +1,12 @@
+# Normalize line endings — checkout native, commit LF. Stops CRLF churn on Windows.
+* text=auto eol=lf
+
+# Binary assets — never normalize
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.drawio binary
+*.xlsx binary
+*.zip binary

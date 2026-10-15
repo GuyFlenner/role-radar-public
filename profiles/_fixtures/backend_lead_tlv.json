@@ -1,0 +1,224 @@
+{
+  "_comment": [
+    "SYNTHETIC test fixture — invented person, invented employers. Never a real name, employer or",
+    "salary, even though this repo is private.",
+    "Shape: a backend/AI engineering LEAD with a hard commute band. Pairs with",
+    "frontend_ic_berlin.json so CI proves a change that helps one profile does not wreck the other."
+  ],
+  "schema_version": "1.0",
+  "identity": {
+    "name": "Test Backend Lead",
+    "cv_path": "cv.md",
+    "email": ""
+  },
+  "locale": {
+    "timezone": "Asia/Jerusalem",
+    "currency": "ILS",
+    "languages": [
+      "en",
+      "he"
+    ]
+  },
+  "geo": {
+    "mode": "required",
+    "preferred_locations": [
+      "tel aviv",
+      "tel-aviv",
+      "ramat gan",
+      "herzliya",
+      "netanya",
+      "raanana",
+      "ra'anana",
+      "petah tikva",
+      "givatayim",
+      "bnei brak",
+      "rehovot",
+      "hod hasharon",
+      "kfar saba",
+      "airport city",
+      "or yehuda",
+      "holon",
+      "rishon",
+      "remote"
+    ],
+    "commute_extra": {
+      "example-defense-co": [
+        "haifa"
+      ]
+    }
+  },
+  "roles": {
+    "target_titles": [
+      "team lead",
+      "team leader",
+      "engineering manager",
+      "engineering lead",
+      "tech lead",
+      "technical lead",
+      "backend team lead",
+      "r&d manager",
+      "software manager"
+    ],
+    "exclude_titles": [
+      "qa team lead",
+      "automation team lead",
+      "product manager",
+      "vp product",
+      "mechanical team lead",
+      "hardware design",
+      "it manager",
+      "devops team lead",
+      "mechanical team leader",
+      "talent acquisition",
+      "hardware tech lead",
+      "it tech lead",
+      "product analyst"
+    ],
+    "in_band_titles": [
+      "team lead",
+      "engineering manager",
+      "staff",
+      "principal"
+    ],
+    "above_band_titles": [
+      "director",
+      "vp",
+      "vice president",
+      "head of engineering",
+      "chief"
+    ],
+    "require_leadership": true,
+    "domain_exclusions": [
+      "embedded",
+      "firmware",
+      "rtos",
+      "fpga",
+      "verilog",
+      "vhdl",
+      "mcu",
+      "bare-metal",
+      "device driver",
+      "pcb",
+      "electro-optics",
+      "npi",
+      "manufacturing",
+      "soldering",
+      "production line",
+      "integration",
+      "hardware"
+    ],
+    "domain_exclusion_overrides": [
+      "embedded analytics",
+      "embedded finance",
+      "software integration",
+      "data integration",
+      "api integration",
+      "systems software"
+    ]
+  },
+  "skills": {
+    "keywords": [
+      "python",
+      "kafka",
+      "aws",
+      "postgres",
+      "redis",
+      "docker",
+      "kubernetes",
+      "k8s",
+      "microservices",
+      "distributed",
+      "terraform",
+      "ci/cd",
+      "backend",
+      "saas",
+      "ai",
+      "llm",
+      "rag",
+      "agent",
+      "mcp",
+      "team lead",
+      "mentoring",
+      "hiring"
+    ],
+    "boost_keywords": [
+      "python",
+      "kafka",
+      "backend",
+      "ai",
+      "agent"
+    ]
+  },
+  "facts": {
+    "known_languages": [
+      "python",
+      "c#",
+      "sql"
+    ],
+    "knockout_languages": [
+      "go",
+      "rust",
+      "scala"
+    ],
+    "employers": [
+      {
+        "name": "ExampleStream",
+        "markers": [
+          "kafka",
+          "msk",
+          "hundreds of millions"
+        ]
+      },
+      {
+        "name": "ExampleSaaS",
+        "markers": [
+          "multi-tenant",
+          "ecs fargate"
+        ]
+      }
+    ],
+    "never_claim": [
+      "node.js",
+      "mongodb",
+      "elastic beanstalk"
+    ],
+    "rank_or_credential": "Major"
+  },
+  "salary": {
+    "currency": "ILS",
+    "open": 50000,
+    "target": 47000,
+    "floor": 44000,
+    "period": "month",
+    "sources": [
+      "glassdoor.co.il",
+      "ethosia"
+    ]
+  },
+  "rag": {
+    "corpus_globs": [
+      "notes/*.md"
+    ],
+    "goldens": [
+      {
+        "id": "pg",
+        "query": "how do I scale a write-heavy postgres table",
+        "must_retrieve": [
+          "postgres.md"
+        ],
+        "k": 5
+      }
+    ]
+  },
+  "csv": {
+    "pattern": "board-export*.csv",
+    "sender_filter": "JobsBot"
+  },
+  "research": {
+    "depth": "deep",
+    "deep_companies": [
+      "ExampleStream"
+    ],
+    "quick_companies": []
+  }
+}

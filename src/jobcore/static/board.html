@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipeline Board</title>
+<style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Flight-strip board. The ledger is a queue of things in flight, so it is laid
+   out the way a controller lays out progress strips: one dense strip per row,
+   a colour-coded tab on the left edge encoding whether the posting is real, and
+   an amber alarm rail above the bay. Scanning the left edge alone should tell
+   you what is worth an hour.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --bg: #f3f4f6;
+  --bay: #e7e9ed;
+  --strip: #ffffff;
+  --ink: #14181f;
+  --muted: #626c7c;
+  --rule: #d5d9e0;
+  --live: #2f8f5b;
+  --listed: #4b7fc4;
+  --unverified: #9aa3b0;
+  --dead: #b9424a;
+  --alarm: #b2681a;
+  --alarm-bg: #fbf0e0;
+  --conflict: #b9424a;
+  --conflict-bg: #fbe8e8;
+  --focus: #2f6fd0;
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1319;
+    --bay: #141a22;
+    --strip: #1a212b;
+    --ink: #dfe4ec;
+    --muted: #838f9f;
+    --rule: #263040;
+    --live: #4fae7a;
+    --listed: #5b8fd6;
+    --unverified: #6c778a;
+    --dead: #e2564d;
+    --alarm: #e8a33d;
+    --alarm-bg: #2a2013;
+    --conflict: #e2564d;
+    --conflict-bg: #2b1616;
+    --focus: #6ea8ff;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--sans); font-size: 14px; line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+
+/* ── header rail ─────────────────────────────────────────────────────────── */
+.rail {
+  display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  padding: 12px 18px; border-bottom: 1px solid var(--rule); background: var(--bay);
+  position: sticky; top: 0; z-index: 5;
+}
+.rail h1 {
+  margin: 0; font-family: var(--mono); font-size: 13px; font-weight: 700;
+  letter-spacing: .18em; text-transform: uppercase;
+}
+.rail .meta { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.pulse {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--live); margin-right: 6px; vertical-align: middle;
+}
+.pulse[data-beat="1"] { animation: beat .6s ease-out; }
+@keyframes beat { from { transform: scale(2.6); opacity: .4; } to { transform: scale(1); opacity: 1; } }
+
+/* ── alarms ──────────────────────────────────────────────────────────────── */
+.alarms { padding: 0 18px; }
+.alarms:empty { display: none; }
+.alarm {
+  display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap;
+  margin-top: 10px; padding: 9px 12px; border-radius: 4px;
+  border-left: 3px solid var(--alarm); background: var(--alarm-bg);
+}
+.alarm[data-kind="route_conflict"] { border-left-color: var(--conflict); background: var(--conflict-bg); }
+.alarm .tag {
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--alarm);
+}
+.alarm[data-kind="route_conflict"] .tag { color: var(--conflict); }
+.alarm .who { font-weight: 600; }
+.alarm .what { color: var(--muted); }
+
+.problems {
+  margin: 10px 18px 0; padding: 9px 12px; border-radius: 4px;
+  border-left: 3px solid var(--conflict); background: var(--conflict-bg);
+  font-family: var(--mono); font-size: 12px;
+}
+
+/* ── filters ─────────────────────────────────────────────────────────────── */
+.controls { padding: 12px 18px 0; display: grid; gap: 10px; }
+.buckets { display: flex; gap: 6px; flex-wrap: wrap; }
+.tab {
+  display: flex; align-items: baseline; gap: 7px;
+  padding: 6px 11px; border: 1px solid var(--rule); border-radius: 3px;
+  background: var(--strip); font-family: var(--mono); font-size: 11px;
+  letter-spacing: .09em; text-transform: uppercase;
+}
+.tab .n { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tab[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--bay); }
+.tab[data-empty="1"] { opacity: .45; }
+
+.filters { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.filters input[type="search"] {
+  flex: 1 1 220px; min-width: 160px; padding: 7px 10px;
+  border: 1px solid var(--rule); border-radius: 3px;
+  background: var(--strip); color: var(--ink); font: inherit;
+}
+.filters label {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted); display: flex; gap: 7px; align-items: center;
+}
+.filters select {
+  padding: 6px 8px; border: 1px solid var(--rule); border-radius: 3px;
+  background: var(--strip); color: var(--ink); font: inherit; font-size: 13px;
+}
+.chip {
+  padding: 5px 9px; border: 1px solid var(--rule); border-radius: 3px;
+  background: var(--strip); font-family: var(--mono); font-size: 11px; letter-spacing: .07em;
+}
+.chip[aria-pressed="true"] { border-color: currentColor; }
+.chip[data-live="OPEN"][aria-pressed="true"] { color: var(--live); }
+.chip[data-live="LISTED"][aria-pressed="true"] { color: var(--listed); }
+.chip[data-live="UNVERIFIED"][aria-pressed="true"] { color: var(--unverified); }
+.chip[data-live="CLOSED"][aria-pressed="true"] { color: var(--dead); }
+
+/* ── the bay ─────────────────────────────────────────────────────────────── */
+.bay { padding: 14px 18px 60px; }
+.group { margin-top: 22px; }
+.group > h2 {
+  display: flex; align-items: baseline; gap: 12px; margin: 0 0 8px;
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--muted);
+}
+.group > h2::after {
+  content: ""; flex: 1; height: 1px; background: var(--rule);
+}
+.group > h2 .n { font-variant-numeric: tabular-nums; color: var(--ink); }
+
+.strip {
+  display: grid; grid-template-columns: 44px 1fr auto;
+  gap: 0 12px; align-items: start;
+  background: var(--strip); border: 1px solid var(--rule); border-left: 0;
+  border-radius: 0 4px 4px 0; margin-bottom: 4px;
+}
+.strip > .tabcol {
+  grid-row: 1 / span 2; align-self: stretch;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 9px 0; border-left: 3px solid var(--unverified); border-radius: 0;
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+}
+.strip[data-live="OPEN"] > .tabcol { border-left-color: var(--live); }
+.strip[data-live="LISTED"] > .tabcol { border-left-color: var(--listed); }
+.strip[data-live="CLOSED"] > .tabcol { border-left-color: var(--dead); }
+.strip[data-conflict="1"] { box-shadow: inset 0 0 0 1px var(--conflict); }
+.tabcol .score { font-size: 17px; font-weight: 700; line-height: 1; }
+.tabcol .of { font-size: 9px; color: var(--muted); letter-spacing: .06em; }
+
+.strip .body { padding: 9px 0; min-width: 0; }
+.strip .title { font-weight: 600; }
+.strip .title .co { font-weight: 700; }
+.strip .title .sep { color: var(--muted); margin: 0 6px; }
+.strip .sub {
+  font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+  margin-top: 3px; overflow-wrap: anywhere;
+}
+.strip .sub b { color: var(--ink); font-weight: 600; }
+.strip .warn { color: var(--alarm); }
+.strip .side {
+  padding: 9px 12px 9px 0; display: flex; gap: 10px; align-items: center;
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+
+/* The one action on a strip: go look at the posting in a real browser. Its wording and colour
+   are driven by open_kind from the view model, so a dead req can never wear a live affordance. */
+.act {
+  padding: 5px 10px; border: 1px solid var(--rule); border-radius: 3px;
+  background: var(--bay); color: var(--ink); text-decoration: none;
+  font-family: var(--mono); font-size: 11px; letter-spacing: .04em; white-space: nowrap;
+}
+.act:hover { border-color: currentColor; }
+.act[data-kind="open"] { color: var(--live); border-color: var(--live); }
+.act[data-kind="check"] { color: var(--alarm); border-color: var(--alarm); }
+.act[data-kind="closed"] { color: var(--muted); background: none; }
+.act[data-kind="search"] { color: var(--muted); background: none; border-style: dashed; }
+
+.livechip {
+  padding: 3px 7px; border-radius: 2px; font-family: var(--mono); font-size: 10px;
+  letter-spacing: .1em; border: 1px solid currentColor; color: var(--unverified);
+}
+.strip[data-live="OPEN"] .livechip { color: var(--live); }
+.strip[data-live="LISTED"] .livechip { color: var(--listed); }
+.strip[data-live="CLOSED"] .livechip { color: var(--dead); }
+.strip .manage {
+  border: 0; background: none; padding: 2px 4px; color: var(--muted);
+  font-family: var(--mono); font-size: 11px; letter-spacing: .08em;
+}
+.strip .drawer {
+  grid-column: 2 / -1; padding: 0 12px 12px 0; display: none;
+  border-top: 1px dashed var(--rule); margin-top: 2px;
+}
+.strip[data-open="1"] .drawer { display: block; }
+.drawer .cmds { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 9px; }
+.drawer .cmds button {
+  padding: 5px 9px; border: 1px solid var(--rule); border-radius: 3px;
+  background: var(--bay); font-family: var(--mono); font-size: 11px;
+}
+.drawer .hint { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 9px; }
+.drawer .hist { margin: 9px 0 0; padding: 0; list-style: none; font-size: 12px; }
+.drawer .hist li { color: var(--muted); padding: 2px 0; }
+.drawer .hist b { color: var(--ink); font-family: var(--mono); font-size: 11px; }
+
+/* ── per-position detail ───────────────────────────────────────────────────
+   Lazy-loaded into the drawer that already exists, rather than a second view with a router.
+   Everything here is either ledger state or a schema-validated profile.json — never the body
+   of a file in positions/, which is where the salary floors and interviewer notes live. */
+.detail { margin-top: 12px; border-top: 1px dashed var(--rule); padding-top: 10px; }
+.detail h3 {
+  margin: 0 0 7px; font-family: var(--mono); font-size: 11px; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+}
+.detail .snap { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px 16px; }
+.detail .snap div { font-size: 12px; }
+.detail .snap dt {
+  font-family: var(--mono); font-size: 10px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted);
+}
+.detail .snap dd { margin: 1px 0 0; color: var(--ink); }
+.detail .prose { font-size: 12.5px; line-height: 1.5; margin: 9px 0 0; color: var(--ink); }
+.detail .stack { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 7px; }
+.detail .stack span {
+  padding: 2px 7px; border: 1px solid var(--rule); border-radius: 10px;
+  background: var(--bay); font-family: var(--mono); font-size: 10.5px; color: var(--ink);
+}
+.detail .tl { margin: 0; padding: 0; list-style: none; }
+.detail .tl li {
+  font-size: 12px; padding: 3px 0 3px 12px; border-left: 2px solid var(--rule); color: var(--muted);
+}
+.detail .tl li b { color: var(--ink); font-family: var(--mono); font-size: 11px; letter-spacing: .06em; }
+.detail .risk { font-size: 12px; padding: 4px 0 4px 10px; border-left: 2px solid var(--alarm); color: var(--ink); }
+.detail .risk .src { color: var(--muted); font-family: var(--mono); font-size: 10.5px; }
+.detail .docs { display: flex; gap: 6px; flex-wrap: wrap; }
+.detail .docs span {
+  font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+  border: 1px dashed var(--rule); border-radius: 3px; padding: 2px 6px;
+}
+.detail .warnbox { color: var(--alarm); font-family: var(--mono); font-size: 11px; }
+.detail .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-top: 11px; }
+
+.changed { animation: flash 1.8s ease-out; }
+@keyframes flash { from { background: var(--alarm-bg); } to { background: var(--strip); } }
+
+.empty { padding: 40px 0; color: var(--muted); font-family: var(--mono); font-size: 12px; }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+@media (max-width: 620px) {
+  .strip { grid-template-columns: 40px 1fr; }
+  .strip .side { grid-column: 2; padding: 0 12px 9px 0; flex-wrap: wrap; white-space: normal; }
+  .strip .drawer { grid-column: 2; }
+}
+</style>
+</head>
+<body>
+
+<div class="rail">
+  <h1>Pipeline Board</h1>
+  <span class="meta"><span class="pulse" id="pulse"></span><span id="stamp">loading…</span></span>
+  <span class="meta" id="total"></span>
+</div>
+
+<div class="alarms" id="alarms"></div>
+<div id="problems"></div>
+
+<div class="controls">
+  <div class="buckets" id="buckets"></div>
+  <div class="filters">
+    <input type="search" id="q" placeholder="Filter by company or role  ( / )" aria-label="Filter by company or role">
+    <label>min score <select id="minscore"></select></label>
+    <span id="livechips" style="display:flex;gap:6px;flex-wrap:wrap"></span>
+    <label>group <select id="groupby">
+      <option value="bucket">bucket</option>
+      <option value="company">company</option>
+      <option value="score">score</option>
+    </select></label>
+  </div>
+</div>
+
+<div class="bay" id="bay"></div>
+
+<script>
+const BUCKETS = ["act_now", "in_flight", "watch", "above_band", "closed", "suppressed"];
+const LABEL = {
+  act_now: "Act now", in_flight: "In flight", watch: "Watch",
+  above_band: "Above band", closed: "Closed", suppressed: "Suppressed",
+};
+const LIVENESS = ["OPEN", "LISTED", "UNVERIFIED", "CLOSED"];
+
+/* Both endpoints are GET-only reads. The board has no write path by construction — state changes
+   are copyable CLI strings, so record_submission's route guard stays the only way a CV goes out. */
+const BOARD_URL = "/api/board";
+const DETAIL_URL = "/api/position/";
+
+/* Two rows of copy buttons, kept apart deliberately. The first records what the posting looks
+   like — a market fact. The second records what you decided. Conflating them is how an
+   IN_PROCESS pursuit with a dead posting reads as an emergency. */
+const LIVE_CMDS = [
+  ["live_open", "saw it open"],
+  ["live_listed", "saw it listed"],
+  ["live_closed", "saw it closed"],
+];
+const DECISION_CMDS = [
+  ["applied", "applied"],
+  ["in_process", "in process"],
+  ["submit", "record submission"],
+  ["rejected", "they rejected"],
+  ["declined", "I declined"],
+];
+
+const state = {
+  data: null,
+  mtime: -1,
+  bucket: "act_now",
+  q: "",
+  minscore: 0,
+  live: new Set(),
+  groupby: "bucket",
+  open: new Set(),
+  prints: new Map(),   // id -> serialised row, for change detection
+  changed: new Set(),
+  /* id -> {status:"loading"|"ready"|"error", payload}. Cached because render() rebuilds the whole
+     bay every 5s poll; without this the panel would re-fetch on every tick and flicker. */
+  detail: new Map(),
+};
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ── polling ─────────────────────────────────────────────────────────────── */
+async function poll() {
+  try {
+    const data = await (await fetch(BOARD_URL)).json();
+    if (data.ledger_mtime === state.mtime && state.data) return;
+    markChanges(data);
+    state.mtime = data.ledger_mtime;
+    state.data = data;
+    /* The ledger moved, so every cached detail payload is stale. Without this, running
+       `pipeline event <id> ...` in a terminal would never show up in an open panel — which is the
+       one thing this feature exists to do. Refetch only the panels actually on screen. */
+    state.detail.clear();
+    render();
+    beat();
+    for (const id of state.open) loadDetail(id);
+  } catch (e) {
+    $("stamp").textContent = "ledger unreachable — is the server still running?";
+  }
+}
+
+function markChanges(data) {
+  const next = new Map(data.cards.map((c) => [c.id, c.bucket + c.stage + c.last_touched + c.posting_live]));
+  state.changed = new Set();
+  if (state.prints.size) {
+    for (const [id, print] of next) if (state.prints.get(id) !== print) state.changed.add(id);
+  }
+  state.prints = next;
+}
+
+function beat() {
+  const p = $("pulse");
+  p.dataset.beat = "1";
+  setTimeout(() => (p.dataset.beat = "0"), 700);
+}
+
+/* ── chrome ──────────────────────────────────────────────────────────────── */
+function renderChrome() {
+  const d = state.data;
+  $("stamp").textContent = "as of " + d.generated;
+  $("total").textContent = d.cards.length + " tracked";
+
+  $("buckets").innerHTML =
+    `<button class="tab" data-b="all" aria-pressed="${state.bucket === "all"}">
+       <span>all</span><span class="n">${d.cards.length}</span></button>` +
+    BUCKETS.map((b) => `
+      <button class="tab" data-b="${b}" data-empty="${d.counts[b] ? 0 : 1}"
+              aria-pressed="${state.bucket === b}">
+        <span>${LABEL[b]}</span><span class="n">${d.counts[b]}</span></button>`).join("");
+
+  $("alarms").innerHTML = d.alarms.map((a) => `
+    <div class="alarm" data-kind="${a.kind}">
+      <span class="tag">${a.kind === "route_conflict" ? "Resolve the route first" : "Nothing sent"}</span>
+      <span class="who" dir="auto">${esc(a.company)} — ${esc(a.role)}</span>
+      <span class="what" dir="auto">${esc(a.text)}</span>
+    </div>`).join("");
+
+  $("problems").innerHTML = d.validate.ok ? "" :
+    `<div class="problems">Ledger has ${d.validate.problems.length} problem(s):
+       ${d.validate.problems.map(esc).join(" · ")}</div>`;
+}
+
+/* ── strips ──────────────────────────────────────────────────────────────── */
+function visible() {
+  const q = state.q.toLowerCase();
+  return state.data.cards.filter((c) => {
+    if (state.bucket !== "all" && c.bucket !== state.bucket) return false;
+    if (state.minscore && (c.score ?? 0) < state.minscore) return false;
+    if (state.live.size && !state.live.has(c.posting_live)) return false;
+    if (q && !(c.company + " " + c.role).toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+function groupKey(c) {
+  if (state.groupby === "company") return c.company || "—";
+  if (state.groupby === "score") return (c.score ?? 0) + "/10";
+  return LABEL[c.bucket] || c.bucket;
+}
+
+function strip(c) {
+  const age = c.days_since_touch === null || c.days_since_touch === undefined
+    ? "" : c.days_since_touch + "d";
+  const prior = (c.prior_outcomes || []).filter((h) => h.event);
+  return `
+  <article class="strip" data-live="${esc(c.posting_live)}" data-conflict="${c.route_conflict ? 1 : 0}"
+           data-id="${esc(c.id)}" data-open="${state.open.has(c.id) ? 1 : 0}"
+           ${state.changed.has(c.id) ? 'data-flash="1"' : ""}>
+    <div class="tabcol"><span class="score">${c.score ?? "–"}</span><span class="of">of 10</span></div>
+    <div class="body">
+      <div class="title" dir="auto"><span class="co">${esc(c.company)}</span><span class="sep">/</span>${esc(c.role)}</div>
+      <div class="sub">
+        <b>${esc(c.route)}</b> · ${esc(c.location) || "location unknown"} ·
+        posted ${esc(c.posted_date) || "?"} · <b>${esc(c.stage)}</b>${c.outcome ? " " + esc(c.outcome) : ""}
+        ${c.open_kind === "search" ? '<span class="warn"> · no link on file</span>' : ""}
+        ${prior.length ? `<span class="warn"> · prior here: ${esc(prior[prior.length - 1].event)}</span>` : ""}
+      </div>
+    </div>
+    <div class="side">
+      <span class="livechip">${esc(c.posting_live || "UNVERIFIED").toLowerCase()}</span>
+      <a class="act" data-kind="${esc(c.open_kind)}" href="${esc(c.open_url)}"
+         target="_blank" rel="noopener noreferrer">${esc(c.open_label)}&nbsp;↗</a>
+      <span title="days since last touched">${age}</span>
+      <button class="manage" data-toggle="${esc(c.id)}">${state.open.has(c.id) ? "close ▴" : "manage ▾"}</button>
+    </div>
+    <div class="drawer">
+      <div class="hint">${c.checked
+        ? `You checked this ${esc(c.checked.date)} (${c.checked.age_days}d ago) — <b>${esc(c.checked.status)}</b>${
+            c.checked.note ? ": " + esc(c.checked.note) : ""}`
+        : "Nobody has opened this posting by hand yet."}</div>
+      <div class="cmds">
+        ${LIVE_CMDS.map(([k, text]) =>
+          `<button data-copy="${esc(c.commands[k])}">${text}</button>`).join("")}
+      </div>
+      <div class="cmds">
+        ${DECISION_CMDS.map(([k, text]) =>
+          `<button data-copy="${esc(c.commands[k])}">${text}</button>`).join("")}
+      </div>
+      <div class="hint">Copies the command — run it in a terminal. The board never writes the ledger.</div>
+      ${c.position_folder ? `<div class="hint">folder: ${esc(c.position_folder)}</div>` : ""}
+      ${prior.length ? `<ul class="hist">${prior.slice(-4).map((h) =>
+        `<li><b>${esc(h.date)} ${esc(h.event)}</b> ${esc((h.note || "").slice(0, 180))}</li>`).join("")}</ul>` : ""}
+      ${state.open.has(c.id) ? detailBlock(c.id) : ""}
+    </div>
+  </article>`;
+}
+
+/* ── per-position detail ─────────────────────────────────────────────────────
+   One extra GET, only when a row is actually expanded. Loading all of it for 115 rows on every
+   5s poll would multiply the payload for data almost none of which is on screen. */
+async function loadDetail(id) {
+  if (state.detail.has(id)) return;
+  state.detail.set(id, { status: "loading" });
+  try {
+    const resp = await fetch(DETAIL_URL + encodeURIComponent(id));
+    if (!resp.ok) throw new Error(resp.status);
+    state.detail.set(id, { status: "ready", payload: await resp.json() });
+  } catch (err) {
+    state.detail.set(id, { status: "error" });
+  }
+  render();
+}
+
+function snapRow(label, value) {
+  return value ? `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>` : "";
+}
+
+function detailBlock(id) {
+  const entry = state.detail.get(id);
+  if (!entry || entry.status === "loading") return `<div class="detail"><div class="hint">loading…</div></div>`;
+  if (entry.status === "error") return `<div class="detail"><div class="warnbox">could not load this position</div></div>`;
+
+  const dt = entry.payload;
+  const pr = dt.profile;
+  const events = dt.events || [];
+  const risks = dt.risks || [];
+  const docs = dt.documents || [];
+
+  const snapshot = pr ? `
+    <h3>Company</h3>
+    <dl class="snap">
+      ${snapRow("Industry", pr.industry)}
+      ${snapRow("Founded", pr.founded)}
+      ${snapRow("Size", pr.size)}
+      ${snapRow("Funding", pr.funding)}
+    </dl>
+    ${pr.what_they_do ? `<p class="prose">${esc(pr.what_they_do)}</p>` : ""}
+    ${pr.differentiator ? `<p class="prose">${esc(pr.differentiator)}</p>` : ""}
+    ${(pr.tech_stack || []).length
+      ? `<div class="stack">${pr.tech_stack.map((t) => `<span>${esc(t)}</span>`).join("")}</div>` : ""}
+    ${pr.updated ? `<div class="hint">snapshot updated ${esc(pr.updated)}</div>` : ""}`
+    : `<h3>Company</h3><div class="hint">${dt.profile_error
+        ? `profile.json was rejected and withheld — ${esc(dt.profile_error)}`
+        : "No profile.json yet. Run company-researcher to write one."}</div>`;
+
+  const timeline = `
+    <h3>Timeline</h3>
+    ${dt.applied_date ? `<div class="hint">applied ${esc(dt.applied_date)}</div>` : ""}
+    ${events.length
+      ? `<ul class="tl">${events.map((e) =>
+          `<li><b>${esc(e.date)} ${esc(e.event)}</b>${e.note ? " — " + esc(e.note) : ""}</li>`).join("")}</ul>`
+      : `<div class="hint">No rounds recorded. Log one with <code>pipeline event ${esc(id)} --type HR_SCREEN</code>.</div>`}`;
+
+  const watchfor = `
+    <h3>Watch for</h3>
+    ${risks.length
+      ? risks.map((r) =>
+          `<div class="risk">${esc(r.text)}${r.source ? ` <span class="src">(${esc(r.source)})</span>` : ""}</div>`).join("")
+      : `<div class="hint">Nothing flagged. Add one with <code>pipeline risk ${esc(id)} --text "…"</code>.</div>`}`;
+
+  const documents = docs.length ? `
+    <h3>Prepared</h3>
+    <div class="docs">${docs.map((f) => `<span>${esc(f.name)}</span>`).join("")}</div>
+    <div class="hint">Names only — the board never reads these files.</div>` : "";
+
+  return `<div class="detail">
+    ${snapshot}
+    <div class="cols"><div>${timeline}</div><div>${watchfor}</div></div>
+    ${documents}
+  </div>`;
+}
+
+function render() {
+  renderChrome();
+  const rows = visible();
+  if (!rows.length) {
+    $("bay").innerHTML = `<p class="empty">Nothing matches. Widen the filters, or pick another bucket.</p>`;
+    return;
+  }
+  const groups = new Map();
+  for (const c of rows) {
+    const k = groupKey(c);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(c);
+  }
+  $("bay").innerHTML = [...groups].map(([k, cs]) => `
+    <section class="group"><h2>${esc(k)} <span class="n">${cs.length}</span></h2>
+      ${cs.map(strip).join("")}
+    </section>`).join("");
+
+  for (const el of document.querySelectorAll('.strip[data-flash="1"]')) el.classList.add("changed");
+}
+
+/* ── events ──────────────────────────────────────────────────────────────── */
+document.addEventListener("click", (e) => {
+  const tab = e.target.closest(".tab");
+  if (tab) { state.bucket = tab.dataset.b; render(); return; }
+
+  const chip = e.target.closest(".chip");
+  if (chip) {
+    const v = chip.dataset.live;
+    state.live.has(v) ? state.live.delete(v) : state.live.add(v);
+    chip.setAttribute("aria-pressed", state.live.has(v));
+    render(); return;
+  }
+
+  const toggle = e.target.closest("[data-toggle]");
+  if (toggle) {
+    const id = toggle.dataset.toggle;
+    if (state.open.has(id)) {
+      state.open.delete(id);
+    } else {
+      state.open.add(id);
+      loadDetail(id);   // no-op when already cached
+    }
+    render(); return;
+  }
+
+  const copy = e.target.closest("[data-copy]");
+  if (copy) {
+    navigator.clipboard.writeText(copy.dataset.copy);
+    const was = copy.textContent;
+    copy.textContent = "copied";
+    setTimeout(() => (copy.textContent = was), 1200);
+  }
+});
+
+$("q").addEventListener("input", (e) => { state.q = e.target.value; render(); });
+$("groupby").addEventListener("change", (e) => { state.groupby = e.target.value; render(); });
+$("minscore").addEventListener("change", (e) => { state.minscore = +e.target.value; render(); });
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "/" && e.target.tagName !== "INPUT") { e.preventDefault(); $("q").focus(); }
+  if (e.key === "Escape" && e.target === $("q")) { $("q").value = ""; state.q = ""; render(); }
+});
+
+$("minscore").innerHTML = ["any", 5, 6, 7, 8, 9]
+  .map((v) => `<option value="${v === "any" ? 0 : v}">${v}</option>`).join("");
+$("livechips").innerHTML = LIVENESS.map((v) =>
+  `<button class="chip" data-live="${v}" aria-pressed="false">${v.toLowerCase()}</button>`).join("");
+
+poll();
+setInterval(poll, 5000);
+</script>
+</body>
+</html>

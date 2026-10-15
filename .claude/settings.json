@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "model": "sonnet",
+  "permissions": {
+    "deny": [
+      "Read(.env)",
+      "Read(.env.local)",
+      "Read(.env.*.local)",
+      "Read(secrets/**)",
+      "Write(.env)",
+      "Write(secrets/**)"
+    ],
+    "allow": [
+      "Bash(uv run python -m src.jobcore.shortlist:*)",
+      "Bash(uv run python -m src.jobcore.ats_shortlist:*)",
+      "Bash(uv run python -m src.jobcore.pdf:*)",
+      "Bash(uv run python -m src.jobcore.liveness:*)",
+      "Bash(uv run python -m src.jobcore.track_sweep:*)",
+      "Bash(uv run python -m src.jobcore.smoke:*)",
+      "Bash(uv run python -m pytest:*)",
+      "Bash(uv run ruff check:*)",
+      "Bash(uv run ruff format:*)",
+      "Bash(uv run mypy:*)",
+      "Bash(bash scripts/verify_all.sh)",
+      "Bash(bash scripts/ci-local.sh)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git show:*)",
+      "Bash(uv run python -m src.jobcore.check:*)",
+      "Bash(uv run python -m src.jobcore.usage:*)",
+      "Bash(uv run python scripts/drawio_overlap_lint.py:*)",
+      "Bash(git merge-tree:*)",
+      "Bash(git rev-list:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git for-each-ref:*)",
+      "Bash(git check-ignore:*)"
+    ]
+  }
+}

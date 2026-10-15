@@ -1,0 +1,165 @@
+{
+  "_comment": [
+    "COPY THIS to $PROFILE_DIR/profile.json and edit. Do NOT edit it in place and do NOT put your",
+    "real profile in this repo — PROFILE_DIR lives outside it precisely so two people can share the",
+    "platform without sharing their job searches.",
+    "Validate with:  uv run python -m src.jobcore.profile validate",
+    "Summary for a skill prompt:  uv run python -m src.jobcore.profile --brief"
+  ],
+  "schema_version": "1.0",
+  "identity": {
+    "name": "Jane Smith",
+    "_name": "Used for outreach. The CV PDF filename is derived from the CV's own '# ' H1, not from here.",
+    "cv_path": "cv.md",
+    "_cv_path": "Relative to PROFILE_DIR.",
+    "email": ""
+  },
+  "locale": {
+    "timezone": "Europe/Berlin",
+    "_timezone": "IANA name. Dates a human reads are rendered in this zone, never bare UTC.",
+    "currency": "EUR",
+    "languages": [
+      "en",
+      "de"
+    ],
+    "_languages": "Drives the interview-prep query bank (e.g. local-language Glassdoor searches)."
+  },
+  "geo": {
+    "mode": "preferred",
+    "_mode": "'required' = a role outside the list is DROPPED before scoring. 'preferred' = kept and ranked. Start with 'preferred'; 'required' only makes sense with a real commute band.",
+    "preferred_locations": [
+      "berlin",
+      "potsdam",
+      "remote"
+    ],
+    "_preferred_locations": "Lowercase substrings matched against the job's location string.",
+    "commute_extra": {},
+    "_commute_extra": "Per-ATS-target widening, e.g. {\"some-defense-co\": [\"haifa\"]} to allow one employer outside the band."
+  },
+  "roles": {
+    "target_titles": [
+      "frontend engineer",
+      "senior frontend engineer",
+      "ui engineer"
+    ],
+    "_target_titles": "A title matching any of these is relevant regardless of the generic checks.",
+    "exclude_titles": [
+      "qa",
+      "product manager",
+      "sales engineer",
+      "recruiter"
+    ],
+    "in_band_titles": [
+      "senior",
+      "staff"
+    ],
+    "above_band_titles": [
+      "director",
+      "vp",
+      "vice president",
+      "head of",
+      "chief"
+    ],
+    "_above_band_titles": "Ranked BELOW in-band roles, never dropped — title inflation varies wildly by company size.",
+    "require_leadership": false,
+    "_require_leadership": "true only if you exclusively want lead/manager roles. An IC search must leave this false or everything scores 1.",
+    "domain_exclusions": [
+      "embedded",
+      "firmware",
+      "rtos",
+      "fpga",
+      "pcb",
+      "electro-optics"
+    ],
+    "_domain_exclusions": "Hard drops. Only list domains you would never take.",
+    "domain_exclusion_overrides": [],
+    "_domain_exclusion_overrides": "Rescues a false positive, e.g. 'embedded analytics' when 'embedded' is excluded.",
+    "domain_label_exclusions": [],
+    "_domain_label_exclusions": "Optional. Department labels on a job board (e.g. 'R&D - Hardware') that mean 'not for me'. Empty = a built-in list for a SOFTWARE search (QA, hardware, HR, sales, finance...). A hardware, QA or sales candidate must set this, or their own field is dropped.",
+    "depth_risk_titles": [],
+    "_depth_risk_titles": "Optional. Title keywords for areas your CV is thinner on than your main strength (e.g. a backend lead might list 'data platform'). A match never filters or re-scores a role; the board just adds a depth advisory so you weight interview prep toward it. Empty = no opinion."
+  },
+  "skills": {
+    "keywords": [
+      "react",
+      "typescript",
+      "javascript",
+      "css",
+      "accessibility",
+      "testing",
+      "vite",
+      "graphql"
+    ],
+    "_keywords": "Your actual stack. Each hit adds to the score — this is the main ranking signal.",
+    "boost_keywords": [
+      "react",
+      "typescript"
+    ],
+    "_boost_keywords": "The few that matter most; must be a subset of keywords."
+  },
+  "facts": {
+    "_comment": "GROUND TRUTH for the honesty gates. Leave empty and those gates SKIP (and say so) rather than silently pass. Fill it in and they can catch a CV overclaiming on your behalf.",
+    "known_languages": [
+      "typescript",
+      "javascript",
+      "python"
+    ],
+    "knockout_languages": [
+      "go",
+      "rust",
+      "scala"
+    ],
+    "_knockout_languages": "Languages you do NOT have. A JD requiring one of these is flagged as a real gap.",
+    "employers": [
+      {
+        "name": "Acme Corp",
+        "markers": [
+          "design system",
+          "monorepo"
+        ],
+        "_markers": "Phrases that identify work done at THIS employer, so the gate can catch achievements attributed to the wrong job."
+      }
+    ],
+    "never_claim": [
+      "kubernetes",
+      "kafka"
+    ],
+    "_never_claim": "Technologies you must never appear to claim. The gate errors if the CV asserts one.",
+    "rank_or_credential": null,
+    "_rank_or_credential": "e.g. a military rank or licence that must be stated exactly or not at all. null to disable."
+  },
+  "privacy": {
+    "_comment": "A FIREWALL for candidate-facing text (CV, cover letter, outreach). Anything listed here is scanned for before a draft is called clean. Typical entries: a pending legal or HR process, a former manager's name, an exact salary figure. Empty = no firewall configured (the profile brief says so); it is not 'all clear'.",
+    "never_mention": [],
+    "private_dates": [],
+    "_private_dates": "ISO dates (YYYY-MM-DD). Each is matched in the forms people type: 2026-03-14, 14.3.2026, 14/3/2026, 'March 14', '14 March'."
+  },
+  "salary": {
+    "currency": "EUR",
+    "open": 95000,
+    "target": 88000,
+    "floor": 80000,
+    "period": "year",
+    "_period": "'year' or 'month' — must match how your market quotes.",
+    "sources": [
+      "levels.fyi",
+      "glassdoor.de"
+    ]
+  },
+  "rag": {
+    "_comment": "Study-note corpus for the retrieval gate. Globs resolve relative to PROFILE_DIR. Leave BOTH empty if you don't use the RAG lane; a corpus with no goldens makes the gate report SKIPPED (non-zero), never a vacuous PASS.",
+    "corpus_globs": [],
+    "goldens": []
+  },
+  "csv": {
+    "_comment": "Your job-board export. `pattern` is a glob under the repo root; `sender_filter` keeps only rows whose sender column contains this substring (\"\" = keep every row).",
+    "pattern": "",
+    "sender_filter": ""
+  },
+  "research": {
+    "_comment": "quick = 3 files (JD + snapshot + interview topics). deep = 6+ files, architecture diagrams, competitive analysis. deep costs materially more, so it is not the default.",
+    "depth": "quick",
+    "deep_companies": [],
+    "quick_companies": []
+  }
+}

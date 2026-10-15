@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0",
+  "source_repo": "<upstream skills framework repo URL, if you sync from one>",
+  "source_local_path": "",
+  "default_branch": "main",
+  "last_synced_at": "2026-05-10T05:44:50Z",
+  "skills": {
+    "job-seeking": {
+      "synced_from_commit": "2fb02a83d47484f7f0c9082c0706fab3542a628b",
+      "synced_at": "2026-05-10T05:44:50Z",
+      "local_modifications": true,
+      "modification_reason": "Added Phase 0.7 input-type detection and Phase 1A single-position mode (JD URL / company URL / pasted JD text), ported from legacy analyze-position skill. Added Phase 6 auto flow-review (invokes job-flow-reviewer non-blocking; SKIP_PHASES=review) — self-improving retro loop. Added native Batch Mode: deterministic core via `python -m src.jobcore.shortlist` + per-company subagent fan-out + AUTO_APPROVE hands-off (retired the LangGraph engine; jobcore is the single source of truth). Added the Untrusted-content guardrail block (upstream SL.17 / prompt-injection hardening)."
+    },
+    "position-filter": {
+      "synced_from_commit": "2fb02a83d47484f7f0c9082c0706fab3542a628b",
+      "synced_at": "2026-05-10T05:44:50Z",
+      "local_modifications": true,
+      "modification_reason": "Added the Untrusted-content guardrail block (upstream SL.17 / prompt-injection hardening) ahead of a full re-sync. Marked modified so a sync from the old pinned commit won't strip it; reconcile on next re-sync from current claude-sdlc, which already carries this block."
+    },
+    "company-researcher": {
+      "synced_from_commit": "2fb02a83d47484f7f0c9082c0706fab3542a628b",
+      "synced_at": "2026-05-10T05:44:50Z",
+      "local_modifications": true,
+      "modification_reason": "Added the Untrusted-content guardrail block (upstream SL.17 / prompt-injection hardening) ahead of a full re-sync. Marked modified so a sync from the old pinned commit won't strip it; reconcile on next re-sync from current claude-sdlc, which already carries this block. ALSO (2026-07-17): upgraded the Architecture-Diagram step to the TWO-DIAGRAM pattern — deterministic/regular architecture + an AI-enhanced overlay with differentiated colors/line-styles (what AI adds), plus an accuracy-review pass + companion {company}_ARCHITECTURE_NOTES.md talking-points file. Consider porting the two-diagram pattern upstream to claude-sdlc."
+    },
+    "cv-aligner": {
+      "synced_from_commit": "2fb02a83d47484f7f0c9082c0706fab3542a628b",
+      "synced_at": "2026-05-10T05:44:50Z",
+      "local_modifications": true,
+      "modification_reason": "Added Step 4.5 Flow & Anti-Drift Review (no verbatim repetition across Summary/Achievements/Experience; tools framed as verbs-to-outcomes not identity nouns; keyword-once; 2-page + no-orphan-heading render check) + flow_score QA dimension + Step 0 liveness pre-flight (verify posting OPEN before tailoring; UNVERIFIED handling for JS-rendered boards) + Step 0.5 knockout-requirements check (hard quantified must-haves the candidate can't meet — specific-language-years, clearance, degree, domain-years) + Step 6 cover-letter drift gate (find_cover_letter_drift — cover letter must not copy CV verbatim). ALSO: PRIVATE-DATA SCOPE GUARD in Step 1 — never read the candidate's private/legal directories; 'why leaving' stays neutral. Consider porting upstream to claude-sdlc."
+    },
+    "interview-prep": {
+      "synced_from_commit": "2fb02a83d47484f7f0c9082c0706fab3542a628b",
+      "synced_at": "2026-05-10T05:44:50Z",
+      "local_modifications": true,
+      "modification_reason": "Ported train-ride QA_PACK output from legacy interviewer skill (--tight, --coding-test, --onsite, --ai-allowed flags) + multi-source Glassdoor harvest with Israeli/Hebrew locale support (--locale=il) from legacy glassdoor-interviews skill. Added the Untrusted-content guardrail block (upstream SL.17 / prompt-injection hardening)."
+    },
+    "architect": {
+      "synced_from_commit": "2fb02a83d47484f7f0c9082c0706fab3542a628b",
+      "synced_at": "2026-05-10T05:44:50Z",
+      "local_modifications": false
+    },
+    "diagram-generator": {
+      "synced_from_commit": "2fb02a83d47484f7f0c9082c0706fab3542a628b",
+      "synced_at": "2026-05-10T05:44:50Z",
+      "local_modifications": true,
+      "modification_reason": "Added section 2b — AI-enhancement overlay convention (2026-07-17): a reusable house rule for rendering a deterministic baseline vs. what AI adds as two pages, with differentiated colors (green=AI addition, purple=AI governance/store) + dashed edges + a legend. Exemplar: positions/accessibe/research/customer_portal_architecture.drawio. Marked modified so a sync from the old pinned commit won't strip it. Consider porting upstream to claude-sdlc."
+    },
+    "job-flow-reviewer": {
+      "synced_from_commit": "2fb02a83d47484f7f0c9082c0706fab3542a628b",
+      "synced_at": "2026-05-10T05:44:50Z",
+      "local_modifications": true,
+      "modification_reason": "Post-run retro / drift-catcher skill for this job-seeking workspace: invoked (non-blocking) by job-seeking Phase 6 to audit a completed run for CV drift/overclaim, verbatim repetition, ATS/format regressions, and mis-scores, then fold the lessons back into the job-seeking skill set. Adapted from upstream flow-reviewer; retargeted at the jobcore gates + positions/ outputs. Do NOT port these adaptations upstream."
+    },
+    "checkpoint": {
+      "synced_from_commit": "af9dc9162212e784187015958cfd1612b0e213aa",
+      "synced_at": "2026-07-01T00:00:00Z",
+      "local_modifications": true,
+      "modification_reason": "Adapted the upstream SDLC checkpoint skill for this job-seeking workspace: removed SDLC phase-gate/context-gate auto-invocation and the btw-status coupling (manual /checkpoint only); retargeted memory path to C--code1-test; replaced the 🔴/🟡 blocker convention (absent here) with in-flight items derived from the CLAUDE.md Active Positions table; replaced SDLC task/phase fields with job-seeking focus/position/pipeline_phase + a suggested_skills field pointing at the job-seeking skill set; made Step 3b redaction aggressive for this repo's real names/salary/HR-legal content (names->roles, salary->[REDACTED]); Asia/Jerusalem timestamps; added a Hebrew/RTL paste caveat. Do NOT port these adaptations upstream."
+    },
+    "good-morning": {
+      "synced_from_commit": "4de4cd0e2c214b771fd4da2cf57152f48ba11b43",
+      "synced_at": "2026-07-30T00:00:00Z",
+      "local_modifications": true,
+      "modification_reason": "Adapted the upstream SDLC good-morning skill for this job-seeking workspace: removed Slack/Jira/PR live-signal pulling and the skill-library-health section (this repo has no skill_lint.py/skill_curator.py) — dropped, not stubbed; retargeted sources to job-tracking/INTERVIEW_INDEX.md, CLAUDE.md Active Positions table, memory/MEMORY.md checkpoints, and positions/*/STATUS.md; replaced Slack/PR blocker sections with schedule/in-progress/waiting-on-others sections; kept manual-trigger-only (no SessionStart hook) and zero-network-calls constraints; added the hearing/legal-content redaction note. Do NOT port these adaptations upstream."
+    }
+  },
+  "skipped": [
+    "sdlc",
+    "product-owner",
+    "team-lead",
+    "developer",
+    "react-developer",
+    "security-researcher",
+    "code-reviewer",
+    "flow-reviewer",
+    "btw-status",
+    "slack",
+    "test-reviewer",
+    "skill-inventory",
+    "aws-architect",
+    "onprem-architect",
+    "migration-architect",
+    "azure-architect",
+    "ai-llm-architect",
+    "streaming-architect",
+    "data-architect"
+  ],
+  "_notes": "This workspace is a job-seeking pipeline, not a software-development project. The 'skipped' list intentionally excludes the SDLC core and specialist architects from claude-sdlc. To add any of them later: move the entry from 'skipped' to 'skills' with synced_from_commit/synced_at as null, then run scripts/sync-claude-skills.ps1. Locally-modified skills are skipped on sync unless -Force is passed."
+}
